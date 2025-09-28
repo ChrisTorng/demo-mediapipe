@@ -50,14 +50,28 @@ class GlassesApp {
     // 載入眼鏡圖片
     loadGlassesImages() {
         this.glassesImages = {};
-        const glassesTypes = ['classic', 'sunglasses', 'round'];
+        const glassesTypes = ['classic', 'sunglasses', 'round', 'cat-eye', 'sport', 'square'];
         
         glassesTypes.forEach(type => {
+            // 首先嘗試載入 SVG 檔案
             const img = new Image();
-            img.src = this.createGlassesImage(type);
+            img.crossOrigin = 'anonymous';
+            
+            // 如果有 SVG 檔案就使用，否則使用 Canvas 繪製
+            const svgPath = `assets/glasses/${type}-glasses.svg`;
+            
             img.onload = () => {
                 console.log(`${type} 眼鏡圖片載入完成`);
             };
+            
+            img.onerror = () => {
+                console.log(`SVG 載入失敗，使用 Canvas 繪製 ${type}`);
+                // 如果 SVG 載入失敗，使用 Canvas 繪製
+                img.src = this.createGlassesImage(type);
+            };
+            
+            // 先嘗試載入 SVG
+            img.src = svgPath;
             this.glassesImages[type] = img;
         });
     }
@@ -79,6 +93,15 @@ class GlassesApp {
                 break;
             case 'round':
                 this.drawRoundGlasses(ctx, canvas.width, canvas.height);
+                break;
+            case 'cat-eye':
+                this.drawCatEyeGlasses(ctx, canvas.width, canvas.height);
+                break;
+            case 'sport':
+                this.drawSportGlasses(ctx, canvas.width, canvas.height);
+                break;
+            case 'square':
+                this.drawSquareGlasses(ctx, canvas.width, canvas.height);
                 break;
         }
         
@@ -191,6 +214,119 @@ class GlassesApp {
         ctx.moveTo(275, 40);
         ctx.lineTo(290, 35);
         ctx.stroke();
+    }
+    
+    // 繪製貓眼眼鏡
+    drawCatEyeGlasses(ctx, width, height) {
+        ctx.strokeStyle = '#FF1493';
+        ctx.lineWidth = 3;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        
+        // 左鏡片 (貓眼形狀)
+        ctx.beginPath();
+        ctx.moveTo(20, 50);
+        ctx.quadraticCurveTo(50, 25, 100, 30);
+        ctx.quadraticCurveTo(130, 35, 130, 50);
+        ctx.quadraticCurveTo(130, 65, 100, 70);
+        ctx.quadraticCurveTo(50, 75, 20, 50);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        // 右鏡片 (貓眼形狀)
+        ctx.beginPath();
+        ctx.moveTo(170, 50);
+        ctx.quadraticCurveTo(200, 25, 250, 30);
+        ctx.quadraticCurveTo(280, 35, 280, 50);
+        ctx.quadraticCurveTo(280, 65, 250, 70);
+        ctx.quadraticCurveTo(200, 75, 170, 50);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        // 鼻樑
+        ctx.beginPath();
+        ctx.moveTo(130, 50);
+        ctx.lineTo(170, 50);
+        ctx.stroke();
+        
+        // 裝飾
+        ctx.fillStyle = '#FF1493';
+        ctx.beginPath();
+        ctx.arc(30, 40, 2, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(270, 40, 2, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+    
+    // 繪製運動眼鏡
+    drawSportGlasses(ctx, width, height) {
+        ctx.strokeStyle = '#003366';
+        ctx.lineWidth = 4;
+        
+        // 創建漸層
+        const gradient = ctx.createLinearGradient(0, 25, 0, 75);
+        gradient.addColorStop(0, 'rgba(0, 102, 204, 0.8)');
+        gradient.addColorStop(1, 'rgba(0, 68, 153, 0.9)');
+        ctx.fillStyle = gradient;
+        
+        // 一體式鏡片
+        ctx.beginPath();
+        ctx.moveTo(20, 50);
+        ctx.quadraticCurveTo(40, 25, 100, 30);
+        ctx.quadraticCurveTo(150, 20, 200, 30);
+        ctx.quadraticCurveTo(260, 25, 280, 50);
+        ctx.quadraticCurveTo(280, 70, 260, 75);
+        ctx.quadraticCurveTo(200, 80, 150, 80);
+        ctx.quadraticCurveTo(100, 80, 40, 75);
+        ctx.quadraticCurveTo(20, 70, 20, 50);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        // 反光效果
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.beginPath();
+        ctx.ellipse(80, 45, 25, 8, 0, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(220, 45, 25, 8, 0, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+    
+    // 繪製方形粗框眼鏡
+    drawSquareGlasses(ctx, width, height) {
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 6;
+        ctx.fillStyle = 'rgba(240, 240, 240, 0.05)';
+        
+        // 左鏡片
+        ctx.beginPath();
+        ctx.roundRect(25, 30, 100, 50, 5);
+        ctx.fill();
+        ctx.stroke();
+        
+        // 右鏡片
+        ctx.beginPath();
+        ctx.roundRect(175, 30, 100, 50, 5);
+        ctx.fill();
+        ctx.stroke();
+        
+        // 粗鼻樑
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.roundRect(125, 50, 50, 8, 4);
+        ctx.fill();
+        
+        // 粗鏡腳
+        ctx.beginPath();
+        ctx.roundRect(15, 47, 25, 6, 3);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.roundRect(260, 47, 25, 6, 3);
+        ctx.fill();
     }
     
     // 開始攝影機
