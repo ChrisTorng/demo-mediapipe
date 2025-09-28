@@ -308,13 +308,14 @@ class GlassesApp {
             return;
         }
         
-        // 轉換為 canvas 座標
+        // 轉換為 canvas 座標（考慮鏡像效果）
         const canvasWidth = this.canvas.width;
         const canvasHeight = this.canvas.height;
         
-        const rightEyeX = rightEye.x * canvasWidth;
+        // 因為視訊是鏡像顯示，需要翻轉 X 座標
+        const rightEyeX = (1 - rightEye.x) * canvasWidth;  // 翻轉 X 座標
         const rightEyeY = rightEye.y * canvasHeight;
-        const leftEyeX = leftEye.x * canvasWidth;
+        const leftEyeX = (1 - leftEye.x) * canvasWidth;    // 翻轉 X 座標
         const leftEyeY = leftEye.y * canvasHeight;
         
         // 計算眼鏡位置和大小
@@ -368,8 +369,8 @@ class GlassesApp {
         const canvasWidth = this.canvas.width;
         const canvasHeight = this.canvas.height;
         
-        // 使用邊界框估算眼鏡位置
-        const faceX = box.xMin * canvasWidth;
+        // 使用邊界框估算眼鏡位置（考慮鏡像效果）
+        const faceX = (1 - box.xMin - box.width) * canvasWidth;  // 翻轉 X 座標
         const faceY = box.yMin * canvasHeight;
         const faceWidth = box.width * canvasWidth;
         const faceHeight = box.height * canvasHeight;
@@ -412,7 +413,8 @@ class GlassesApp {
         const canvasWidth = this.canvas.width;
         const canvasHeight = this.canvas.height;
         
-        const x = box.xMin * canvasWidth;
+        // 考慮鏡像效果翻轉座標
+        const x = (1 - box.xMin - box.width) * canvasWidth;  // 翻轉 X 座標
         const y = box.yMin * canvasHeight;
         const width = box.width * canvasWidth;
         const height = box.height * canvasHeight;
@@ -442,7 +444,8 @@ class GlassesApp {
         this.ctx.fillStyle = '#FF0000';
         keypoints.forEach((point, index) => {
             if (point && point.x !== undefined && point.y !== undefined) {
-                const x = point.x * canvasWidth;
+                // 考慮鏡像效果翻轉座標
+                const x = (1 - point.x) * canvasWidth;  // 翻轉 X 座標
                 const y = point.y * canvasHeight;
                 
                 this.ctx.beginPath();
