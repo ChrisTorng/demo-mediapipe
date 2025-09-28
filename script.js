@@ -11,6 +11,7 @@ class GlassesApp {
         this.faceDetection = null;
         this.isRunning = false;
         this.currentGlasses = 'classic';
+        this.debugMode = false;
         
         // FPS 計算
         this.lastTime = 0;
@@ -254,8 +255,11 @@ class GlassesApp {
                     this.drawGlasses(detection);
                     successCount++;
                     
-                    // 可選：繪製人臉框架（用於調試）
-                    // this.drawFaceBox(detection);
+                    // 除錯模式：繪製人臉框架和關鍵點
+                    if (this.debugMode) {
+                        this.drawFaceBox(detection);
+                        this.drawKeypoints(detection);
+                    }
                 } catch (error) {
                     console.warn(`繪製第 ${index + 1} 個人臉失敗:`, error);
                 }
@@ -298,7 +302,9 @@ class GlassesApp {
         const nose = keypoints[2];
         
         if (!rightEye || !leftEye) {
-            console.log('Missing eye keypoints:', rightEye, leftEye);
+            console.log('Missing eye keypoints, trying fallback method');
+            // 使用邊界框估算眼睛位置的後備方案
+            this.drawGlassesFallback(detection);
             return;
         }
         
@@ -346,6 +352,52 @@ class GlassesApp {
         this.ctx.restore();
     }
     
+    // 後備眼鏡繪製方法（當關鍵點不可用時）
+    drawGlassesFallback(detection) {
+        // 處理不同版本的 MediaPipe API 結構
+        let box;
+        if (detection.locationData && detection.locationData.relativeBoundingBox) {
+            box = detection.locationData.relativeBoundingBox;
+        } else if (detection.boundingBox) {
+            box = detection.boundingBox;
+        } else {
+            console.log('No bounding box available for fallback');
+            return;
+        }
+        
+        const canvasWidth = this.canvas.width;
+        const canvasHeight = this.canvas.height;
+        
+        // 使用邊界框估算眼鏡位置
+        const faceX = box.xMin * canvasWidth;
+        const faceY = box.yMin * canvasHeight;
+        const faceWidth = box.width * canvasWidth;
+        const faceHeight = box.height * canvasHeight;
+        
+        // 估算眼鏡位置（基於一般人臉比例）
+        const glassesWidth = faceWidth * 0.8;
+        const glassesHeight = glassesWidth * 0.33;
+        const centerX = faceX + faceWidth * 0.5;
+        const centerY = faceY + faceHeight * 0.35; // 眼睛大約在臉部上方 35% 的位置
+        
+        // 繪製眼鏡（無旋轉）
+        this.ctx.save();
+        this.ctx.translate(centerX, centerY);
+        
+        const glassesImg = this.glassesImages[this.currentGlasses];
+        if (glassesImg && glassesImg.complete) {
+            this.ctx.drawImage(
+                glassesImg,
+                -glassesWidth / 2,
+                -glassesHeight / 2,
+                glassesWidth,
+                glassesHeight
+            );
+        }
+        
+        this.ctx.restore();
+    }
+    
     // 繪製人臉框架（調試用）
     drawFaceBox(detection) {
         // 處理不同版本的 MediaPipe API 結構
@@ -368,6 +420,42 @@ class GlassesApp {
         this.ctx.strokeStyle = '#00FF00';
         this.ctx.lineWidth = 2;
         this.ctx.strokeRect(x, y, width, height);
+    }
+    
+    // 繪製關鍵點（調試用）
+    drawKeypoints(detection) {
+        // 處理不同版本的 MediaPipe API 結構
+        let keypoints;
+        if (detection.locationData && detection.locationData.relativeKeypoints) {
+            keypoints = detection.locationData.relativeKeypoints;
+        } else if (detection.keypoints) {
+            keypoints = detection.keypoints;
+        } else if (detection.landmarks) {
+            keypoints = detection.landmarks;
+        }
+        
+        if (!keypoints) return;
+        
+        const canvasWidth = this.canvas.width;
+        const canvasHeight = this.canvas.height;
+        
+        this.ctx.fillStyle = '#FF0000';
+        keypoints.forEach((point, index) => {
+            if (point && point.x !== undefined && point.y !== undefined) {
+                const x = point.x * canvasWidth;
+                const y = point.y * canvasHeight;
+                
+                this.ctx.beginPath();
+                this.ctx.arc(x, y, 3, 0, 2 * Math.PI);
+                this.ctx.fill();
+                
+                // 標記點編號
+                this.ctx.fillStyle = '#FFFFFF';
+                this.ctx.font = '12px Arial';
+                this.ctx.fillText(index.toString(), x + 5, y - 5);
+                this.ctx.fillStyle = '#FF0000';
+            }
+        });
     }
     
     // 計算 FPS
@@ -437,6 +525,13 @@ function changeGlasses() {
     const select = document.getElementById('glassesSelect');
     if (app && select) {
         app.changeGlasses(select.value);
+    }
+}
+
+function toggleDebug() {
+    const checkbox = document.getElementById('debugMode');
+    if (app && checkbox) {
+        app.debugMode = checkbox.checked;
     }
 }
 
