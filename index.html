@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediaPipe 眼鏡試戴示範</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🕶️ MediaPipe 虛擬眼鏡試戴</h1>
+            <p>使用 Google MediaPipe 進行即時人臉檢測並疊加虛擬眼鏡</p>
+        </header>
+
+        <div class="demo-container">
+            <div class="video-wrapper">
+                <video id="webcam" autoplay playsinline></video>
+                <canvas id="output" width="640" height="480"></canvas>
+            </div>
+            
+            <div class="controls">
+                <button id="startBtn" onclick="startCamera()">開啟攝影機</button>
+                <button id="stopBtn" onclick="stopCamera()" disabled>停止攝影機</button>
+                <select id="glassesSelect" onchange="changeGlasses()">
+                    <option value="classic">經典眼鏡</option>
+                    <option value="sunglasses">太陽眼鏡</option>
+                    <option value="round">圓形眼鏡</option>
+                </select>
+            </div>
+
+            <div class="info">
+                <div class="status" id="status">點擊「開啟攝影機」開始體驗</div>
+                <div class="fps" id="fps">FPS: --</div>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h3>使用說明：</h3>
+            <ul>
+                <li>點擊「開啟攝影機」允許網站存取您的攝影機</li>
+                <li>確保您的臉部完整出現在畫面中</li>
+                <li>選擇不同的眼鏡樣式進行試戴</li>
+                <li>系統會自動檢測您的臉部並疊加虛擬眼鏡</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js" crossorigin="anonymous"></script>
+    <script src="script.js"></script>
+</body>
+</html>

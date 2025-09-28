@@ -1,0 +1,37 @@
+{
+  "name": "mediapipe-glasses-demo",
+  "version": "1.0.0",
+  "description": "MediaPipe 虛擬眼鏡試戴示範網站",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "dev": "python3 -m http.server 8080",
+    "serve": "npx serve . -p 8080"
+  },
+  "keywords": [
+    "mediapipe",
+    "face-detection",
+    "ar",
+    "glasses",
+    "virtual-try-on",
+    "computer-vision"
+  ],
+  "author": "Demo Project",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "."
+  },
+  "browserslist": [
+    "Chrome >= 88",
+    "Firefox >= 85",
+    "Safari >= 14",
+    "Edge >= 88"
+  ],
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
