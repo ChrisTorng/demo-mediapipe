@@ -34,6 +34,7 @@
                     <option value="square">方形粗框 (2D)</option>
                     <option value="3d-classic">經典眼鏡 (3D)</option>
                     <option value="3d-modern">現代眼鏡 (3D)</option>
+                    <option value="3d-sunglasses">太陽眼鏡 (3D模型)</option>
                 </select>
                 <label>
                     <input type="checkbox" id="debugMode" onchange="toggleDebug()"> 除錯模式
@@ -63,7 +64,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js" crossorigin="anonymous"></script>
     
     <!-- Three.js for 3D rendering -->
-    <script src="https://unpkg.com/three@0.158.0/build/three.min.js" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/three@0.132.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.132.0/examples/js/loaders/GLTFLoader.js"></script>
     
     <script src="script.js"></script>
 </body>

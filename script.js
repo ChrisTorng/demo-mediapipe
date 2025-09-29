@@ -126,9 +126,62 @@ class GlassesApp {
     
     // 載入 3D 眼鏡模型
     load3DGlassesModels() {
-        // 直接創建簡單的3D眼鏡模型，不使用GLTF載入器
+        // 創建簡單的幾何體模型
         this.create3DGlassesModel('3d-classic', 0x333333);
         this.create3DGlassesModel('3d-modern', 0x1a1a1a);
+        
+        // 載入實際的GLB模型
+        this.loadGLBModel('3d-sunglasses', 'assets/3d-models/sun_glasses_fbx_346kb.glb');
+    }
+    
+    // 載入GLB模型
+    loadGLBModel(type, url) {
+        // 檢查GLTFLoader是否存在
+        if (typeof THREE.GLTFLoader === 'undefined') {
+            console.error('GLTFLoader 未載入，無法顯示GLB模型');
+            this.glassesModels[type] = null; // 設為null表示載入失敗
+            return;
+        }
+        
+        const loader = new THREE.GLTFLoader();
+        loader.load(
+            url,
+            (gltf) => {
+                console.log(`GLB 模型載入成功: ${type}`);
+                const model = gltf.scene;
+                
+                // 調整模型大小和位置
+                model.scale.set(0.01, 0.01, 0.01); // 非常小的縮放，因為模型可能很大
+                model.position.set(0, 0, 0);
+                
+                // 調整材質
+                model.traverse((child) => {
+                    if (child.isMesh && child.material) {
+                        child.material.transparent = true;
+                        child.material.opacity = 0.9;
+                        
+                        if (type === '3d-sunglasses' && child.material.color) {
+                            child.material.color.setHex(0x222222);
+                        }
+                    }
+                });
+                
+                model.visible = false;
+                this.glassesModels[type] = model;
+                this.threeScene.add(model);
+                
+                console.log(`3D模型已添加到場景: ${type}`);
+            },
+            (progress) => {
+                if (progress.total > 0) {
+                    console.log(`載入進度 ${type}:`, (progress.loaded / progress.total * 100).toFixed(1) + '%');
+                }
+            },
+            (error) => {
+                console.error(`GLB 模型載入失敗 ${type}:`, error);
+                this.glassesModels[type] = null; // 設為null表示載入失敗
+            }
+        );
     }
     
     // 創建 3D 眼鏡模型
@@ -671,7 +724,10 @@ class GlassesApp {
             const detection = results.detections[0];
             const model = this.glassesModels[this.currentGlasses];
             
-            if (model) {
+            if (model === null) {
+                // 模型載入失敗
+                this.updateStatus('3D模型載入失敗，請檢查網路連線或選擇其他眼鏡', 'error');
+            } else if (model) {
                 // 計算3D眼鏡位置
                 const position = this.calculate3DGlassesPosition(detection);
                 if (position) {
@@ -680,7 +736,7 @@ class GlassesApp {
                     model.rotation.copy(position.rotation);
                     model.scale.copy(position.scale);
                     
-                    // 除錯模式：使用統一的2D除錯方法
+                    // 統一使用2D除錯方法
                     if (this.debugMode) {
                         this.draw3DDebugOverlay(detection);
                         this.updateStatus(`3D 眼鏡已套用 (除錯模式開啟)`, 'success');
