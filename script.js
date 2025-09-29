@@ -154,6 +154,9 @@ class GlassesApp {
                 model.scale.set(0.01, 0.01, 0.01); // 非常小的縮放，因為模型可能很大
                 model.position.set(0, 0, 0);
                 
+                // 修正模型方向 - 上下顛倒問題
+                model.rotation.set(Math.PI, 0, 0); // 沿X軸旋轉180度
+                
                 // 調整材質
                 model.traverse((child) => {
                     if (child.isMesh && child.material) {
@@ -837,12 +840,12 @@ class GlassesApp {
         const scaleRatio = eyeDistancePixels / referenceEyeDistance;
         const glassesScale = Math.max(0.5, Math.min(2.0, scaleRatio));
         
-        // 計算旋轉角度（與2D邏輯相同）
+        // 計算旋轉角度（與2D邏輯相同，但需要考慮模型的初始旋轉）
         const rotationZ = -Math.atan2(leftEyeY - rightEyeY, leftEyeX - rightEyeX);
         
         return {
             position: new THREE.Vector3(worldX, worldY, worldZ),
-            rotation: new THREE.Euler(0, 0, rotationZ),
+            rotation: new THREE.Euler(Math.PI, 0, rotationZ), // 保持X軸180度旋轉修正
             scale: new THREE.Vector3(glassesScale, glassesScale, glassesScale)
         };
     }
