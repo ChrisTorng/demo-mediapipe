@@ -43,14 +43,14 @@ class GlassesApp {
             // 創建場景
             this.threeScene = new THREE.Scene();
             
-            // 創建攝影機
+            // 創建攝影機 - 調整視野角度和位置
             this.threeCamera = new THREE.PerspectiveCamera(
-                75, 
-                this.canvas.width / this.canvas.height, 
-                0.1, 
-                1000
+                50,  // 降低視野角度，讓物體顯示更大
+                this.threeCanvas.width / this.threeCanvas.height, 
+                0.01,  // 近裁剪面更近
+                100    // 遠裁剪面
             );
-            this.threeCamera.position.z = 5;
+            this.threeCamera.position.set(0, 0, 2); // 攝影機位置調整
             
             // 創建渲染器 - 使用獨立的3D canvas
             this.threeRenderer = new THREE.WebGLRenderer({
@@ -62,13 +62,22 @@ class GlassesApp {
             this.threeRenderer.setSize(this.threeCanvas.width, this.threeCanvas.height);
             this.threeRenderer.setClearColor(0x000000, 0); // 透明背景
             
-            // 添加燈光
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            // 更新攝影機長寬比
+            this.threeCamera.aspect = this.threeCanvas.width / this.threeCanvas.height;
+            this.threeCamera.updateProjectionMatrix();
+            
+            // 添加燈光 - 調整光照設定
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // 增加環境光
             this.threeScene.add(ambientLight);
             
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.4);
-            directionalLight.position.set(1, 1, 1);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            directionalLight.position.set(0, 1, 1); // 調整光線方向
             this.threeScene.add(directionalLight);
+            
+            // 添加正面補光
+            const frontLight = new THREE.DirectionalLight(0xffffff, 0.3);
+            frontLight.position.set(0, 0, 1);
+            this.threeScene.add(frontLight);
             
             // 載入 3D 眼鏡模型
             this.load3DGlassesModels();
@@ -105,46 +114,52 @@ class GlassesApp {
             roughness: 0.1
         });
         
+        // 增大眼鏡尺寸
+        const lensRadius = 0.15;        // 鏡片半徑
+        const frameThickness = 0.015;   // 鏡框厚度
+        const eyeDistance = 0.32;       // 兩眼距離
+        
         // 左鏡框
-        const leftFrameGeometry = new THREE.TorusGeometry(0.3, 0.02, 8, 16);
+        const leftFrameGeometry = new THREE.TorusGeometry(lensRadius, frameThickness, 8, 16);
         const leftFrame = new THREE.Mesh(leftFrameGeometry, frameMaterial);
-        leftFrame.position.set(-0.35, 0, 0);
+        leftFrame.position.set(-eyeDistance/2, 0, 0);
         group.add(leftFrame);
         
         // 左鏡片
-        const leftLensGeometry = new THREE.CircleGeometry(0.25, 16);
+        const leftLensGeometry = new THREE.CircleGeometry(lensRadius - frameThickness, 16);
         const leftLens = new THREE.Mesh(leftLensGeometry, lensMaterial);
-        leftLens.position.set(-0.35, 0, 0.01);
+        leftLens.position.set(-eyeDistance/2, 0, 0.005);
         group.add(leftLens);
         
         // 右鏡框
         const rightFrame = new THREE.Mesh(leftFrameGeometry, frameMaterial);
-        rightFrame.position.set(0.35, 0, 0);
+        rightFrame.position.set(eyeDistance/2, 0, 0);
         group.add(rightFrame);
         
         // 右鏡片
         const rightLens = new THREE.Mesh(leftLensGeometry, lensMaterial);
-        rightLens.position.set(0.35, 0, 0.01);
+        rightLens.position.set(eyeDistance/2, 0, 0.005);
         group.add(rightLens);
         
-        // 鼻樑
-        const bridgeGeometry = new THREE.CylinderGeometry(0.01, 0.01, 0.2, 8);
+        // 鼻樑 - 調整大小和位置
+        const bridgeGeometry = new THREE.CylinderGeometry(0.008, 0.008, eyeDistance * 0.4, 8);
         const bridge = new THREE.Mesh(bridgeGeometry, frameMaterial);
         bridge.rotation.z = Math.PI / 2;
-        bridge.position.set(0, 0.05, 0);
+        bridge.position.set(0, -lensRadius * 0.3, 0); // 向下移動到鏡片底部
         group.add(bridge);
         
-        // 左鏡腳
-        const templeGeometry = new THREE.CylinderGeometry(0.008, 0.008, 0.8, 8);
+        // 左鏡腳 - 調整長度和角度
+        const templeLength = 0.6;
+        const templeGeometry = new THREE.CylinderGeometry(0.006, 0.006, templeLength, 8);
         const leftTemple = new THREE.Mesh(templeGeometry, frameMaterial);
-        leftTemple.rotation.z = Math.PI / 6;
-        leftTemple.position.set(-0.7, -0.1, -0.3);
+        leftTemple.rotation.z = Math.PI / 8;  // 減少角度
+        leftTemple.position.set(-eyeDistance/2 - lensRadius + 0.05, 0, -templeLength/3);
         group.add(leftTemple);
         
         // 右鏡腳
         const rightTemple = new THREE.Mesh(templeGeometry, frameMaterial);
-        rightTemple.rotation.z = -Math.PI / 6;
-        rightTemple.position.set(0.7, -0.1, -0.3);
+        rightTemple.rotation.z = -Math.PI / 8;
+        rightTemple.position.set(eyeDistance/2 + lensRadius - 0.05, 0, -templeLength/3);
         group.add(rightTemple);
         
         // 為不同類型添加特殊效果
@@ -155,21 +170,22 @@ class GlassesApp {
                 metalness: 0.9,
                 roughness: 0.1,
                 transparent: true,
-                opacity: 0.2
+                opacity: 0.3
             });
             
+            const reflectionSize = lensRadius * 0.6;
             const leftReflection = new THREE.Mesh(
-                new THREE.CircleGeometry(0.15, 16),
+                new THREE.CircleGeometry(reflectionSize, 16),
                 reflectionMaterial
             );
-            leftReflection.position.set(-0.35, 0.1, 0.02);
+            leftReflection.position.set(-eyeDistance/2, lensRadius * 0.3, 0.01);
             group.add(leftReflection);
             
             const rightReflection = new THREE.Mesh(
-                new THREE.CircleGeometry(0.15, 16),
+                new THREE.CircleGeometry(reflectionSize, 16),
                 reflectionMaterial
             );
-            rightReflection.position.set(0.35, 0.1, 0.02);
+            rightReflection.position.set(eyeDistance/2, lensRadius * 0.3, 0.01);
             group.add(rightReflection);
         }
         
@@ -579,7 +595,11 @@ class GlassesApp {
                 });
                 
                 if (successCount > 0) {
-                    this.updateStatus(`成功檢測並繪製 ${successCount} 張人臉`, 'success');
+                    if (this.debugMode) {
+                        this.updateStatus(`2D 眼鏡已套用 (除錯模式開啟)`, 'success');
+                    } else {
+                        this.updateStatus(`成功檢測並繪製 ${successCount} 張人臉`, 'success');
+                    }
                 } else {
                     this.updateStatus(`檢測到 ${results.detections.length} 張人臉，但繪製失敗`, 'error');
                 }
@@ -614,7 +634,17 @@ class GlassesApp {
                     model.rotation.copy(position.rotation);
                     model.scale.copy(position.scale);
                     
-                    this.updateStatus(`3D 眼鏡已套用`, 'success');
+                    // 除錯模式：在3D canvas上也顯示關鍵點
+                    if (this.debugMode) {
+                        this.draw3DDebugOverlay(detection);
+                        this.updateStatus(`3D 眼鏡已套用 (除錯模式開啟)`, 'success');
+                    } else {
+                        // 非除錯模式下隱藏除錯平面
+                        if (this.debugPlane) {
+                            this.debugPlane.visible = false;
+                        }
+                        this.updateStatus(`3D 眼鏡已套用`, 'success');
+                    }
                 } else {
                     this.updateStatus('無法定位3D眼鏡位置', 'error');
                 }
@@ -629,6 +659,42 @@ class GlassesApp {
         if (this.threeRenderer && this.threeScene && this.threeCamera) {
             this.threeRenderer.render(this.threeScene, this.threeCamera);
         }
+    }
+    
+    // 在3D模式下繪製除錯覆蓋層
+    draw3DDebugOverlay(detection) {
+        // 取得2D canvas的context來繪製除錯資訊
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = this.threeCanvas.width;
+        tempCanvas.height = this.threeCanvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        // 使用現有的除錯方法繪製關鍵點和人臉框
+        this.drawFaceBoxOn(tempCtx, detection);
+        this.drawKeypointsOn(tempCtx, detection);
+        
+        // 將除錯資訊繪製到3D canvas上
+        const debugTexture = new THREE.CanvasTexture(tempCanvas);
+        
+        // 如果還沒有除錯平面，創建一個
+        if (!this.debugPlane) {
+            const debugGeometry = new THREE.PlaneGeometry(4, 3);
+            const debugMaterial = new THREE.MeshBasicMaterial({
+                map: debugTexture,
+                transparent: true,
+                opacity: 1.0
+            });
+            this.debugPlane = new THREE.Mesh(debugGeometry, debugMaterial);
+            this.debugPlane.position.z = 0.01; // 稍微在前面一點
+            this.threeScene.add(this.debugPlane);
+        } else {
+            // 更新材質貼圖
+            this.debugPlane.material.map = debugTexture;
+            this.debugPlane.material.needsUpdate = true;
+        }
+        
+        this.debugPlane.visible = true;
+        debugTexture.needsUpdate = true;
     }
     
     // 計算 3D 眼鏡位置
@@ -651,34 +717,45 @@ class GlassesApp {
         
         if (!rightEye || !leftEye) return null;
         
-        // 轉換為Three.js座標系統
-        const canvasWidth = this.canvas.width;
-        const canvasHeight = this.canvas.height;
+        // MediaPipe座標是相對於視訊尺寸的 [0,1] 範圍
+        // 需要轉換為Three.js的世界座標
         
-        // 考慮鏡像效果
-        const rightEyeX = (1 - rightEye.x) * 2 - 1; // 轉換到 [-1, 1]
-        const rightEyeY = -(rightEye.y * 2 - 1);    // 轉換到 [-1, 1] 並翻轉Y軸
-        const leftEyeX = (1 - leftEye.x) * 2 - 1;
-        const leftEyeY = -(leftEye.y * 2 - 1);
+        // 考慮鏡像效果 - MediaPipe座標需要水平翻轉
+        const rightEyeX = 1 - rightEye.x;  // 翻轉X座標
+        const rightEyeY = rightEye.y;
+        const leftEyeX = 1 - leftEye.x;    // 翻轉X座標  
+        const leftEyeY = leftEye.y;
         
-        // 計算眼鏡中心位置
+        // 計算眼鏡中心位置（在相對座標中）
         const centerX = (rightEyeX + leftEyeX) / 2;
-        const centerY = (rightEyeY + leftEyeY) / 2 + 0.1; // 稍微上移
-        const centerZ = -1; // 距離攝影機的距離
+        const centerY = (rightEyeY + leftEyeY) / 2;
         
-        // 計算眼間距離來確定縮放
-        const eyeDistance = Math.sqrt(
-            Math.pow(leftEyeX - rightEyeX, 2) + 
-            Math.pow(leftEyeY - rightEyeY, 2)
+        // 計算實際的眼間距離（像素）
+        const eyeDistancePixels = Math.sqrt(
+            Math.pow((leftEyeX - rightEyeX) * this.threeCanvas.width, 2) + 
+            Math.pow((leftEyeY - rightEyeY) * this.threeCanvas.height, 2)
         );
         
-        // 計算旋轉角度
-        const rotationZ = Math.atan2(leftEyeY - rightEyeY, leftEyeX - rightEyeX);
+        // 轉換為Three.js世界座標
+        // 假設視訊平面在Z=-1位置，寬度為4個單位(-2到+2)
+        const worldX = (centerX - 0.5) * 4;  // 轉換為 [-2, +2] 範圍
+        const worldY = -(centerY - 0.5) * 3 - 0.3; // 向下調整更多，修正位置偏高問題
+        const worldZ = 0;  // 眼鏡在視訊平面上
+        
+        // 根據實際眼間距離計算縮放比例
+        // 標準眼間距離約為65mm，在640px寬度下約為80-120像素
+        const referenceEyeDistance = 100; // 參考像素距離
+        const scaleRatio = eyeDistancePixels / referenceEyeDistance;
+        const glassesScale = Math.max(0.5, Math.min(2.0, scaleRatio)); // 限制縮放範圍
+        
+        // 計算旋轉角度 - 修正旋轉方向
+        // 原本的計算會導致旋轉方向相反，需要取負值
+        const rotationZ = -Math.atan2(leftEyeY - rightEyeY, leftEyeX - rightEyeX);
         
         return {
-            position: new THREE.Vector3(centerX * 2, centerY * 2, centerZ),
+            position: new THREE.Vector3(worldX, worldY, worldZ),
             rotation: new THREE.Euler(0, 0, rotationZ),
-            scale: new THREE.Vector3(eyeDistance * 2, eyeDistance * 2, eyeDistance * 2)
+            scale: new THREE.Vector3(glassesScale, glassesScale, glassesScale)
         };
     }
     
@@ -864,6 +941,82 @@ class GlassesApp {
                 this.ctx.font = '12px Arial';
                 this.ctx.fillText(index.toString(), x + 5, y - 5);
                 this.ctx.fillStyle = '#FF0000';
+            }
+        });
+    }
+    
+    // 繪製人臉框架到指定context（調試用）
+    drawFaceBoxOn(ctx, detection) {
+        // 處理不同版本的 MediaPipe API 結構
+        let box;
+        if (detection.locationData && detection.locationData.relativeBoundingBox) {
+            box = detection.locationData.relativeBoundingBox;
+        } else if (detection.boundingBox) {
+            box = detection.boundingBox;
+        } else {
+            return;
+        }
+        
+        const canvasWidth = ctx.canvas.width;
+        const canvasHeight = ctx.canvas.height;
+        
+        // 考慮鏡像效果翻轉座標
+        const x = (1 - box.xMin - box.width) * canvasWidth;  // 翻轉 X 座標
+        const y = box.yMin * canvasHeight;
+        const width = box.width * canvasWidth;
+        const height = box.height * canvasHeight;
+        
+        ctx.strokeStyle = '#00FF00';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, width, height);
+    }
+    
+    // 繪製關鍵點到指定context（調試用）
+    drawKeypointsOn(ctx, detection) {
+        // 處理不同版本的 MediaPipe API 結構
+        let keypoints;
+        if (detection.locationData && detection.locationData.relativeKeypoints) {
+            keypoints = detection.locationData.relativeKeypoints;
+        } else if (detection.keypoints) {
+            keypoints = detection.keypoints;
+        } else if (detection.landmarks) {
+            keypoints = detection.landmarks;
+        }
+        
+        if (!keypoints) return;
+        
+        const canvasWidth = ctx.canvas.width;
+        const canvasHeight = ctx.canvas.height;
+        
+        ctx.fillStyle = '#FF0000';
+        ctx.font = '12px Arial';
+        
+        keypoints.forEach((point, index) => {
+            if (point && point.x !== undefined && point.y !== undefined) {
+                // 考慮鏡像效果翻轉座標
+                const x = (1 - point.x) * canvasWidth;  // 翻轉 X 座標
+                const y = point.y * canvasHeight;
+                
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // 標記點編號和名稱
+                ctx.fillStyle = '#FFFFFF';
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 1;
+                
+                let label = index.toString();
+                if (index === 0) label = '0-右眼';
+                else if (index === 1) label = '1-左眼';
+                else if (index === 2) label = '2-鼻尖';
+                else if (index === 3) label = '3-嘴';
+                else if (index === 4) label = '4-右耳';
+                else if (index === 5) label = '5-左耳';
+                
+                ctx.strokeText(label, x + 6, y - 6);
+                ctx.fillText(label, x + 6, y - 6);
+                ctx.fillStyle = '#FF0000';
             }
         });
     }
