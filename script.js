@@ -31,6 +31,42 @@ class GlassesApp {
         this.initializeMediaPipe();
         this.loadGlassesImages();
         this.initializeThreeJS();
+        
+        // 自動開啟攝影機
+        this.autoStartCamera();
+    }
+    
+    // 自動開啟攝影機
+    async autoStartCamera() {
+        // 等待MediaPipe初始化完成
+        let retries = 0;
+        const maxRetries = 50; // 最多等待5秒
+        
+        const waitForInit = () => {
+            return new Promise((resolve) => {
+                const checkInit = () => {
+                    if (this.faceDetection && retries < maxRetries) {
+                        resolve();
+                    } else if (retries < maxRetries) {
+                        retries++;
+                        setTimeout(checkInit, 100);
+                    } else {
+                        resolve(); // 超時也繼續嘗試
+                    }
+                };
+                checkInit();
+            });
+        };
+        
+        await waitForInit();
+        
+        // 自動開始攝影機
+        try {
+            await this.startCamera();
+        } catch (error) {
+            console.log('自動開啟攝影機失敗，可能需要用戶手動授權:', error);
+            this.updateStatus('請點擊「開啟攝影機」允許攝影機權限', '');
+        }
     }
     
     // 初始化 Three.js 3D 渲染器
@@ -515,7 +551,11 @@ class GlassesApp {
     async startCamera() {
         try {
             this.updateStatus('正在開啟攝影機...', '');
-            document.getElementById('startBtn').disabled = true;
+            
+            // 更新按鈕狀態
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            if (startBtn) startBtn.disabled = true;
             
             this.camera = new Camera(this.webcam, {
                 onFrame: async () => {
@@ -530,14 +570,19 @@ class GlassesApp {
             await this.camera.start();
             this.isRunning = true;
             
-            document.getElementById('startBtn').disabled = true;
-            document.getElementById('stopBtn').disabled = false;
+            if (startBtn) startBtn.disabled = true;
+            if (stopBtn) stopBtn.disabled = false;
             this.updateStatus('攝影機已開啟，正在檢測人臉...', 'success');
             
         } catch (error) {
             console.error('攝影機開啟錯誤:', error);
-            this.updateStatus('無法開啟攝影機，請檢查權限設定', 'error');
-            document.getElementById('startBtn').disabled = false;
+            this.updateStatus('無法開啟攝影機，請檢查權限設定或手動點擊「開啟攝影機」', 'error');
+            
+            const startBtn = document.getElementById('startBtn');
+            if (startBtn) startBtn.disabled = false;
+            
+            // 重新拋出錯誤，讓autoStartCamera可以處理
+            throw error;
         }
     }
     

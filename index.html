@@ -11,6 +11,7 @@
         <header>
             <h1>🕶️ MediaPipe 虛擬眼鏡試戴</h1>
             <p>使用 Google MediaPipe 進行即時人臉檢測並疊加虛擬眼鏡</p>
+            <p><small>💡 網站會自動開啟攝影機，請允許瀏覽器的攝影機權限請求</small></p>
         </header>
 
         <div class="demo-container">
@@ -22,7 +23,7 @@
             </div>
             
             <div class="controls">
-                <button id="startBtn" onclick="startCamera()">開啟攝影機</button>
+                <button id="startBtn" onclick="startCamera()">手動開啟攝影機</button>
                 <button id="stopBtn" onclick="stopCamera()" disabled>停止攝影機</button>
                 <select id="glassesSelect" onchange="changeGlasses()">
                     <option value="classic">經典眼鏡 (2D)</option>
@@ -40,7 +41,7 @@
             </div>
 
             <div class="info">
-                <div class="status" id="status">點擊「開啟攝影機」開始體驗</div>
+                <div class="status" id="status">正在初始化並自動開啟攝影機...</div>
                 <div class="fps" id="fps">FPS: --</div>
             </div>
         </div>
