@@ -61,8 +61,9 @@ demo-mediapipe/
 
 ## 眼鏡樣式
 
-目前支援六種眼鏡樣式：
+目前支援八種眼鏡樣式：
 
+### 2D 平面眼鏡
 1. **經典眼鏡**：傳統黑色矩形鏡框
 2. **太陽眼鏡**：深色鏡片設計，帶反光效果
 3. **圓形眼鏡**：復古圓形鏡框，棕色邊框
@@ -70,7 +71,17 @@ demo-mediapipe/
 5. **運動眼鏡**：一體式運動風格，藍色漸層
 6. **方形粗框**：現代粗框設計，黑色邊框
 
-## 技術實現細節
+### 3D 立體眼鏡
+7. **經典眼鏡 (3D)**：使用 Three.js 渲染的立體經典款
+8. **現代眼鏡 (3D)**：帶反光效果的現代立體設計
+
+## 🛠️ 技術棧
+
+- **前端**: HTML5, CSS3, JavaScript (ES6+)
+- **AI/ML**: Google MediaPipe Face Detection
+- **2D圖像處理**: Canvas API, SVG
+- **3D渲染**: Three.js WebGL
+- **視訊**: WebRTC Camera API
 
 ### MediaPipe 設定
 ```javascript
