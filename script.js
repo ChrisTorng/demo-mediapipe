@@ -45,14 +45,16 @@ class GlassesApp {
             // 創建場景
             this.threeScene = new THREE.Scene();
             
-            // 創建攝影機 - 調整視野角度和位置
-            this.threeCamera = new THREE.PerspectiveCamera(
-                50,  // 降低視野角度，讓物體顯示更大
-                this.threeCanvas.width / this.threeCanvas.height, 
-                0.01,  // 近裁剪面更近
-                100    // 遠裁剪面
+            // 創建攝影機 - 使用正交投影以避免透視失真
+            this.threeCamera = new THREE.OrthographicCamera(
+                -2,  // left
+                2,   // right  
+                1.5, // top
+                -1.5,// bottom
+                0.01,// near
+                100  // far
             );
-            this.threeCamera.position.set(0, 0, 2); // 攝影機位置調整
+            this.threeCamera.position.set(0, 0, 1); // 攝影機位置
             
             // 創建渲染器 - 使用獨立的3D canvas
             this.threeRenderer = new THREE.WebGLRenderer({
@@ -63,10 +65,6 @@ class GlassesApp {
             });
             this.threeRenderer.setSize(this.threeCanvas.width, this.threeCanvas.height);
             this.threeRenderer.setClearColor(0x000000, 0); // 透明背景
-            
-            // 更新攝影機長寬比
-            this.threeCamera.aspect = this.threeCanvas.width / this.threeCanvas.height;
-            this.threeCamera.updateProjectionMatrix();
             
             // 添加燈光 - 調整光照設定
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // 增加環境光
@@ -707,39 +705,38 @@ class GlassesApp {
         
         if (!rightEye || !leftEye) return null;
         
-        // MediaPipe座標是相對於視訊尺寸的 [0,1] 範圍
-        // 需要轉換為Three.js的世界座標
+        // 使用與2D眼鏡完全相同的座標計算邏輯
+        const canvasWidth = this.threeCanvas.width;
+        const canvasHeight = this.threeCanvas.height;
         
-        // 考慮鏡像效果 - MediaPipe座標需要水平翻轉
-        const rightEyeX = 1 - rightEye.x;  // 翻轉X座標
-        const rightEyeY = rightEye.y;
-        const leftEyeX = 1 - leftEye.x;    // 翻轉X座標  
-        const leftEyeY = leftEye.y;
+        // 考慮鏡像效果翻轉座標（與2D完全相同）
+        const rightEyeX = (1 - rightEye.x) * canvasWidth;
+        const rightEyeY = rightEye.y * canvasHeight;
+        const leftEyeX = (1 - leftEye.x) * canvasWidth;
+        const leftEyeY = leftEye.y * canvasHeight;
         
-        // 計算眼鏡中心位置（在相對座標中）
+        // 計算眼鏡中心位置（像素座標）
         const centerX = (rightEyeX + leftEyeX) / 2;
         const centerY = (rightEyeY + leftEyeY) / 2;
         
-        // 計算實際的眼間距離（像素）
+        // 計算眼間距離（像素）
         const eyeDistancePixels = Math.sqrt(
-            Math.pow((leftEyeX - rightEyeX) * this.threeCanvas.width, 2) + 
-            Math.pow((leftEyeY - rightEyeY) * this.threeCanvas.height, 2)
+            Math.pow(leftEyeX - rightEyeX, 2) + 
+            Math.pow(leftEyeY - rightEyeY, 2)
         );
         
-        // 轉換為Three.js世界座標
-        // 假設視訊平面在Z=-1位置，寬度為4個單位(-2到+2)
-        const worldX = (centerX - 0.5) * 4;  // 轉換為 [-2, +2] 範圍
-        const worldY = -(centerY - 0.5) * 3 - 0.3; // 向下調整更多，修正位置偏高問題
-        const worldZ = 0;  // 眼鏡在視訊平面上
+        // 將像素座標直接線性映射到Three.js世界座標
+        // 建立一個1:1的映射關係，確保與2D版本位置完全一致
+        const worldX = (centerX - canvasWidth/2) * (4.0 / canvasWidth);   // 標準化到[-2,2]範圍
+        const worldY = -(centerY - canvasHeight/2) * (3.0 / canvasHeight); // 標準化到[-1.5,1.5]範圍，Y軸翻轉
+        const worldZ = 0; // 眼鏡位於Z=0平面
         
-        // 根據實際眼間距離計算縮放比例
-        // 標準眼間距離約為65mm，在640px寬度下約為80-120像素
+        // 根據眼間距離計算縮放（與2D邏輯相同）
         const referenceEyeDistance = 100; // 參考像素距離
         const scaleRatio = eyeDistancePixels / referenceEyeDistance;
-        const glassesScale = Math.max(0.5, Math.min(2.0, scaleRatio)); // 限制縮放範圍
+        const glassesScale = Math.max(0.5, Math.min(2.0, scaleRatio));
         
-        // 計算旋轉角度 - 修正旋轉方向
-        // 原本的計算會導致旋轉方向相反，需要取負值
+        // 計算旋轉角度（與2D邏輯相同）
         const rotationZ = -Math.atan2(leftEyeY - rightEyeY, leftEyeX - rightEyeX);
         
         return {
