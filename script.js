@@ -4,7 +4,9 @@ class GlassesApp {
         this.webcam = document.getElementById('webcam');
         this.canvas = document.getElementById('output');
         this.threeCanvas = document.getElementById('threejs-canvas');
+        this.debugCanvas = document.getElementById('debug-overlay');
         this.ctx = this.canvas.getContext('2d');
+        this.debugCtx = this.debugCanvas.getContext('2d');
         this.statusElement = document.getElementById('status');
         this.fpsElement = document.getElementById('fps');
         
@@ -569,9 +571,10 @@ class GlassesApp {
             // 使用 Three.js 渲染 3D 模型
             this.render3DGlasses(results);
         } else {
-            // 顯示2D canvas，隱藏3D canvas
+            // 顯示2D canvas，隱藏3D canvas和除錯覆蓋層
             this.canvas.style.display = 'block';
             this.threeCanvas.style.display = 'none';
+            this.debugCanvas.style.display = 'none';
             
             // 清除 canvas 用於 2D 渲染
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -634,15 +637,13 @@ class GlassesApp {
                     model.rotation.copy(position.rotation);
                     model.scale.copy(position.scale);
                     
-                    // 除錯模式：在3D canvas上也顯示關鍵點
+                    // 除錯模式：使用統一的2D除錯方法
                     if (this.debugMode) {
                         this.draw3DDebugOverlay(detection);
                         this.updateStatus(`3D 眼鏡已套用 (除錯模式開啟)`, 'success');
                     } else {
-                        // 非除錯模式下隱藏除錯平面
-                        if (this.debugPlane) {
-                            this.debugPlane.visible = false;
-                        }
+                        // 非除錯模式下隱藏除錯覆蓋層
+                        this.debugCanvas.style.display = 'none';
                         this.updateStatus(`3D 眼鏡已套用`, 'success');
                     }
                 } else {
@@ -661,40 +662,29 @@ class GlassesApp {
         }
     }
     
-    // 在3D模式下繪製除錯覆蓋層
+    // 在3D模式下使用2D的除錯繪製方法
     draw3DDebugOverlay(detection) {
-        // 取得2D canvas的context來繪製除錯資訊
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = this.threeCanvas.width;
-        tempCanvas.height = this.threeCanvas.height;
-        const tempCtx = tempCanvas.getContext('2d');
+        // 顯示除錯覆蓋層
+        this.debugCanvas.style.display = 'block';
         
-        // 使用現有的除錯方法繪製關鍵點和人臉框
-        this.drawFaceBoxOn(tempCtx, detection);
-        this.drawKeypointsOn(tempCtx, detection);
+        // 清除除錯canvas
+        this.debugCtx.clearRect(0, 0, this.debugCanvas.width, this.debugCanvas.height);
         
-        // 將除錯資訊繪製到3D canvas上
-        const debugTexture = new THREE.CanvasTexture(tempCanvas);
+        // 暫時儲存原始canvas和context，以便重用2D方法
+        const originalCanvas = this.canvas;
+        const originalCtx = this.ctx;
         
-        // 如果還沒有除錯平面，創建一個
-        if (!this.debugPlane) {
-            const debugGeometry = new THREE.PlaneGeometry(4, 3);
-            const debugMaterial = new THREE.MeshBasicMaterial({
-                map: debugTexture,
-                transparent: true,
-                opacity: 1.0
-            });
-            this.debugPlane = new THREE.Mesh(debugGeometry, debugMaterial);
-            this.debugPlane.position.z = 0.01; // 稍微在前面一點
-            this.threeScene.add(this.debugPlane);
-        } else {
-            // 更新材質貼圖
-            this.debugPlane.material.map = debugTexture;
-            this.debugPlane.material.needsUpdate = true;
-        }
+        // 暫時替換為除錯canvas的context
+        this.canvas = this.debugCanvas;
+        this.ctx = this.debugCtx;
         
-        this.debugPlane.visible = true;
-        debugTexture.needsUpdate = true;
+        // 直接調用2D的除錯方法
+        this.drawFaceBox(detection);
+        this.drawKeypoints(detection);
+        
+        // 恢復原始canvas和context
+        this.canvas = originalCanvas;
+        this.ctx = originalCtx;
     }
     
     // 計算 3D 眼鏡位置
@@ -941,82 +931,6 @@ class GlassesApp {
                 this.ctx.font = '12px Arial';
                 this.ctx.fillText(index.toString(), x + 5, y - 5);
                 this.ctx.fillStyle = '#FF0000';
-            }
-        });
-    }
-    
-    // 繪製人臉框架到指定context（調試用）
-    drawFaceBoxOn(ctx, detection) {
-        // 處理不同版本的 MediaPipe API 結構
-        let box;
-        if (detection.locationData && detection.locationData.relativeBoundingBox) {
-            box = detection.locationData.relativeBoundingBox;
-        } else if (detection.boundingBox) {
-            box = detection.boundingBox;
-        } else {
-            return;
-        }
-        
-        const canvasWidth = ctx.canvas.width;
-        const canvasHeight = ctx.canvas.height;
-        
-        // 考慮鏡像效果翻轉座標
-        const x = (1 - box.xMin - box.width) * canvasWidth;  // 翻轉 X 座標
-        const y = box.yMin * canvasHeight;
-        const width = box.width * canvasWidth;
-        const height = box.height * canvasHeight;
-        
-        ctx.strokeStyle = '#00FF00';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, width, height);
-    }
-    
-    // 繪製關鍵點到指定context（調試用）
-    drawKeypointsOn(ctx, detection) {
-        // 處理不同版本的 MediaPipe API 結構
-        let keypoints;
-        if (detection.locationData && detection.locationData.relativeKeypoints) {
-            keypoints = detection.locationData.relativeKeypoints;
-        } else if (detection.keypoints) {
-            keypoints = detection.keypoints;
-        } else if (detection.landmarks) {
-            keypoints = detection.landmarks;
-        }
-        
-        if (!keypoints) return;
-        
-        const canvasWidth = ctx.canvas.width;
-        const canvasHeight = ctx.canvas.height;
-        
-        ctx.fillStyle = '#FF0000';
-        ctx.font = '12px Arial';
-        
-        keypoints.forEach((point, index) => {
-            if (point && point.x !== undefined && point.y !== undefined) {
-                // 考慮鏡像效果翻轉座標
-                const x = (1 - point.x) * canvasWidth;  // 翻轉 X 座標
-                const y = point.y * canvasHeight;
-                
-                ctx.beginPath();
-                ctx.arc(x, y, 4, 0, 2 * Math.PI);
-                ctx.fill();
-                
-                // 標記點編號和名稱
-                ctx.fillStyle = '#FFFFFF';
-                ctx.strokeStyle = '#000000';
-                ctx.lineWidth = 1;
-                
-                let label = index.toString();
-                if (index === 0) label = '0-右眼';
-                else if (index === 1) label = '1-左眼';
-                else if (index === 2) label = '2-鼻尖';
-                else if (index === 3) label = '3-嘴';
-                else if (index === 4) label = '4-右耳';
-                else if (index === 5) label = '5-左耳';
-                
-                ctx.strokeText(label, x + 6, y - 6);
-                ctx.fillText(label, x + 6, y - 6);
-                ctx.fillStyle = '#FF0000';
             }
         });
     }
