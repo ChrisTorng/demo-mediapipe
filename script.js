@@ -151,7 +151,7 @@ class GlassesApp {
                 const model = gltf.scene;
                 
                 // 調整模型大小和位置
-                model.scale.set(0.01, 0.01, 0.01); // 非常小的縮放，因為模型可能很大
+                model.scale.set(0.0025, 0.0025, 0.0025); // 縮小到1/4 (0.01 -> 0.0025)
                 model.position.set(0, 0, 0);
                 
                 // 修正模型方向 - 上下顛倒問題
@@ -840,8 +840,8 @@ class GlassesApp {
         const scaleRatio = eyeDistancePixels / referenceEyeDistance;
         const glassesScale = Math.max(0.5, Math.min(2.0, scaleRatio));
         
-        // 計算旋轉角度（與2D邏輯相同，但需要考慮模型的初始旋轉）
-        const rotationZ = -Math.atan2(leftEyeY - rightEyeY, leftEyeX - rightEyeX);
+        // 計算旋轉角度（修正方向相反問題）
+        const rotationZ = Math.atan2(leftEyeY - rightEyeY, leftEyeX - rightEyeX); // 移除負號
         
         return {
             position: new THREE.Vector3(worldX, worldY, worldZ),
